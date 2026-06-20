@@ -1,0 +1,1 @@
+ALTER TABLE payments ALTER COLUMN amount TYPE NUMERIC(19, 4);

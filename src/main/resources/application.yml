@@ -1,0 +1,36 @@
+server:
+  port: 4000
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payments_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: payment-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  elasticsearch:
+    uris: http://localhost:9200
+
+debezium:
+  topic: dbserver1.public.payments
+  dlq-topic: dbserver1.public.payments.DLT
+
+logging:
+  level:
+    com.demo: INFO
