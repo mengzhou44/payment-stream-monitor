@@ -17,11 +17,13 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
 
-    public Payment createPayment(BigDecimal amount) {
+    public Payment createPayment(BigDecimal amount, String customerId, String countryCode) {
         Payment payment = new Payment();
         payment.setId(UUID.randomUUID().toString());
         payment.setPaymentDate(LocalDateTime.now());
         payment.setAmount(amount);
+        payment.setCustomerId(customerId);
+        payment.setCountryCode(countryCode);
         return paymentRepository.save(payment);
     }
 

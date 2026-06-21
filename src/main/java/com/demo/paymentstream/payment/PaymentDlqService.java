@@ -3,6 +3,7 @@ package com.demo.paymentstream.payment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -55,17 +56,15 @@ public class PaymentDlqService {
         try (KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props)) {
             TopicPartition partition = new TopicPartition(dlqTopic, 0);
             consumer.assign(List.of(partition));
-            consumer.seekToBeginning(List.of(partition));
 
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(5));
-            for (var record : records) {
+            for (ConsumerRecord<String, String> record : records) {
                 kafkaTemplate.send(originalTopic, record.key(), record.value());
                 count++;
             }
 
-            // commit offsets so count() reflects what has already been replayed
             if (count > 0) {
-                List<org.apache.kafka.clients.consumer.ConsumerRecord<String, String>> partitionRecords = records.records(partition);
+                List<ConsumerRecord<String, String>> partitionRecords = records.records(partition);
                 long nextOffset = partitionRecords.get(partitionRecords.size() - 1).offset() + 1;
                 consumer.commitSync(Map.of(partition, new OffsetAndMetadata(nextOffset)));
             }

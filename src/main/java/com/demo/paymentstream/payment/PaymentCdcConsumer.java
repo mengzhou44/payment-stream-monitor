@@ -1,5 +1,6 @@
 package com.demo.paymentstream.payment;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ public class PaymentCdcConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "${debezium.topic}", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "paymentCdcListenerContainerFactory")
-    public void consume(String message) throws Exception {
+    public void consume(String message) throws JsonProcessingException {
         JsonNode payload = objectMapper.readTree(message).get("payload");
         String op = payload.get("op").asText();
 

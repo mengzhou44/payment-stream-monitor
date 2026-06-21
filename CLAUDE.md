@@ -59,14 +59,14 @@ All classes live flat under `com.demo.paymentstream.payment`:
 
 | Class | Purpose |
 |---|---|
-| `Payment` | JPA entity — `id`, `paymentDate`, `BigDecimal amount` |
-| `PaymentDocument` | Elasticsearch document — same fields |
+| `Payment` | JPA entity — `id`, `paymentDate`, `BigDecimal amount`, `customerId`, `countryCode` |
+| `PaymentDocument` | Elasticsearch document — same fields; `customerId` and `countryCode` are `Keyword` type |
 | `PaymentRepository` | JPA repo (Postgres) |
-| `PaymentRepositoryElasticsearch` | ES repo |
+| `PaymentRepositoryElasticsearch` | ES repo — derived queries for `customerId`, `countryCode`, and both combined |
 | `PaymentService` | Creates and retrieves payments in Postgres |
 | `PaymentServiceElasticsearch` | Upserts and deletes documents in ES |
 | `PaymentController` | REST API (see endpoints below) |
-| `PaymentSimulator` | Inserts a random payment every 2 s |
+| `PaymentSimulator` | Inserts a random payment every 2 s with random `customerId` (CUST-001..010) and `countryCode` (US/GB/DE/FR/JP/CA/AU/SG) |
 | `PaymentCdcConsumer` | Kafka listener — routes CDC ops to `PaymentServiceElasticsearch` |
 | `PaymentKafkaConfig` | Retry (3×, 1 s apart) + DLT error handler |
 | `PaymentDlqService` | DLQ alert listener + count + replay |
@@ -75,8 +75,9 @@ All classes live flat under `com.demo.paymentstream.payment`:
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/payments` | Create a payment manually |
+| `POST` | `/api/payments` | Create a payment manually (body: `amount`, `customerId`, `countryCode`) |
 | `GET` | `/api/payments/{id}` | Fetch a payment by ID |
+| `GET` | `/api/payments/search` | Search payments in ES — optional params: `customerId`, `countryCode` (combinable) |
 | `GET` | `/api/payments/dlq/count` | Number of messages currently in the DLQ |
 | `POST` | `/api/payments/dlq/replay` | Replay all DLQ messages back to the original topic |
 
@@ -87,6 +88,7 @@ All classes live flat under `com.demo.paymentstream.payment`:
 - `d` (delete) → delete from ES
 - `payment_date` arrives as microseconds since epoch and is converted to `Instant`
 - `amount` is `BigDecimal` — parsed from the JSON text representation to avoid floating-point drift
+- `customer_id` and `country_code` are mapped directly from the CDC row to the ES document
 
 ### DLQ flow
 
@@ -104,6 +106,7 @@ Migrations in `src/main/resources/db/migration/`:
 |---|---|
 | `V1__create_payments_table.sql` | Creates `payments` table |
 | `V2__alter_payments_amount_to_numeric.sql` | Changes `amount` from `DOUBLE PRECISION` to `NUMERIC(19,4)` |
+| `V3__add_customer_id_and_country_code.sql` | Adds `customer_id VARCHAR(20)` and `country_code VARCHAR(3)` columns |
 
 Flyway runs automatically on app startup before Hibernate initialises.
 
@@ -136,6 +139,19 @@ Flyway applies any pending migrations, then the app starts. `PaymentSimulator` b
 ### 4. Verify in Kibana
 
 Open http://localhost:5601 → Stack Management → Data Views → create pattern `payments`, time field `paymentDate`.
+
+### 5. Build a dashboard
+
+1. **Visualize Library → Create visualization → Lens**
+2. Useful charts to build:
+   - **Bar chart** — x: `customerId`, y: `sum(amount)` → total spend per customer
+   - **Bar chart** — x: `countryCode`, y: `count()` → payment volume by country
+   - **Pie chart** — slice by `countryCode`, metric `sum(amount)` → geographic share of volume
+   - **Line chart** — x: `paymentDate`, y: `sum(amount)` → payment trend over time
+   - **Metric** — `count()` and `sum(amount)` as headline KPIs
+3. **Dashboard → Create dashboard** → add saved visualizations
+
+> `customerId` and `countryCode` are mapped as `Keyword` in ES, which enables exact-match filtering and aggregations (sum, count, group-by) used by all the above charts.
 
 ## Configuration
 

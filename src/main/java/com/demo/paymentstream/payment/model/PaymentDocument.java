@@ -22,4 +22,10 @@ public class PaymentDocument {
 
     @Field(type = FieldType.Double)
     private BigDecimal amount;
+
+    @Field(type = FieldType.Keyword)
+    private String customerId;
+
+    @Field(type = FieldType.Keyword)
+    private String countryCode;
 }

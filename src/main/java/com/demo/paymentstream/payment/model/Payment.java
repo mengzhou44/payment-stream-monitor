@@ -22,4 +22,10 @@ public class Payment {
 
     @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal amount;
+
+    @Column(nullable = false, length = 20)
+    private String customerId;
+
+    @Column(nullable = false, length = 3)
+    private String countryCode;
 }

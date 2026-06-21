@@ -24,8 +24,10 @@ public class PaymentServiceElasticsearch {
         long microsSinceEpoch = row.get("payment_date").asLong();
         doc.setPaymentDate(Instant.EPOCH.plus(microsSinceEpoch, ChronoUnit.MICROS));
         doc.setAmount(new BigDecimal(row.get("amount").asText()));
+        doc.setCustomerId(row.get("customer_id").asText());
+        doc.setCountryCode(row.get("country_code").asText());
         esRepository.save(doc);
-        log.info("Upserted payment {} amount={}", doc.getId(), doc.getAmount());
+        log.info("Upserted payment {} customerId={} countryCode={} amount={}", doc.getId(), doc.getCustomerId(), doc.getCountryCode(), doc.getAmount());
     }
 
     public void delete(String id) {
