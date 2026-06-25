@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -48,6 +49,13 @@ public class PaymentController {
     @GetMapping("/{id}")
     public Payment getPayment(@PathVariable String id) {
         return paymentService.getPayment(id);
+    }
+
+    @GetMapping("/es/{id}")
+    public ResponseEntity<PaymentDocument> getPaymentFromEs(@PathVariable String id) {
+        return esRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/dlq/count")
